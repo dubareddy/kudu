@@ -106,6 +106,55 @@ namespace Kudu.Services.Deployment
             }
         }
 
+        [HttpGet]
+        public async Task<HttpResponseMessage> ValidateZipDeploy(
+            [FromUri] bool isAsync = false,
+            [FromUri] string author = null,
+            [FromUri] string authorEmail = null,
+            [FromUri] string deployer = Constants.ZipDeploy,
+            [FromUri] string message = DefaultMessage,
+            [FromUri] bool trackDeploymentProgress = false)
+        {
+            using (_tracer.Step("ZipPushDeploy"))
+            {
+                var deploymentInfo = new ArtifactDeploymentInfo(_environment, _traceFactory)
+                {
+                    AllowDeploymentWhileScmDisabled = true,
+                    Deployer = deployer,
+                    IsContinuous = false,
+                    AllowDeferredDeployment = false,
+                    IsReusable = false,
+                    TargetChangeset = DeploymentManager.CreateTemporaryChangeSet(message: "Deploying from pushed zip file"),
+                    CommitId = null,
+                    DeploymentTrackingId = Guid.NewGuid().ToString(),
+                    CorrelationId = GetCorrelationId(Request),
+                    RepositoryType = RepositoryType.None,
+                    Fetch = LocalZipHandler,
+                    DoFullBuildByDefault = false,
+                    Author = author,
+                    AuthorEmail = authorEmail,
+                    Message = message
+                };
+
+                string remotebuild = _settings.GetValue(SettingsKeys.DoBuildDuringDeployment);
+                if (_settings.RunFromLocalZip())
+                {
+                    SetRunFromZipDeploymentInfo(deploymentInfo);
+
+                    if (StringUtils.IsTrueLike(remotebuild)) deploymentInfo.DeploymentPath = "ZipDeploy. Run from package. Ignore remote build.";
+                    else deploymentInfo.DeploymentPath = "ZipDeploy. Run from package.";
+                }
+                else
+                {
+                    if (StringUtils.IsTrueLike(remotebuild)) deploymentInfo.DeploymentPath = "ZipDeploy. Extract zip. Remote build.";
+                    else deploymentInfo.DeploymentPath = "ZipDeploy. Extract zip.";
+                }
+                _tracer.Trace(deploymentInfo.DeploymentPath);
+
+                return await PushDeployAsync(deploymentInfo, isAsync);
+            }
+        }
+
         [HttpPost]
         public async Task<HttpResponseMessage> WarPushDeploy(
             [FromUri] bool isAsync = false,
@@ -553,16 +602,6 @@ namespace Kudu.Services.Deployment
             _tracer.Trace($"Starting {nameof(LocalZipHandler)}");
             if (_settings.RunFromLocalZip() && deploymentInfo is ArtifactDeploymentInfo)
             {
-                string value = _settings.GetValue(SettingsKeys.DoBuildDuringDeployment);
-                if (StringUtils.IsTrueLike(value))
-                {
-                    _tracer.Trace($"Deployment path: run from package and ignore remote build.");
-                }
-                else
-                {
-                    _tracer.Trace($"Deployment path: run from package.");
-                }
-
                 ArtifactDeploymentInfo zipDeploymentInfo = (ArtifactDeploymentInfo)deploymentInfo;
                 // If this was a request with a Zip URL in the JSON, we first need to get the zip content and write it to the site.
                 if (!string.IsNullOrEmpty(zipDeploymentInfo.RemoteURL))
@@ -575,16 +614,6 @@ namespace Kudu.Services.Deployment
             }
             else
             {
-                string value = _settings.GetValue(SettingsKeys.DoBuildDuringDeployment);
-                if (StringUtils.IsTrueLike(value))
-                {
-                    _tracer.Trace($"Deployment path: extract zip and remote build.");
-                }
-                else
-                {
-                    _tracer.Trace($"Deployment path: extract zip.");
-                }
-
                 await LocalZipFetch(repository, deploymentInfo, targetBranch, logger, tracer);
             }
         }
