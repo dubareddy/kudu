@@ -270,6 +270,7 @@ namespace Kudu.Core.Helpers
 
         private static async Task<bool> TryFunctionsRuntimeSyncTriggers(string requestId)
         {
+            Trace(TraceEventType.Information, nameof(TryFunctionsRuntimeSyncTriggers));
             try
             {
                 var scmHostName = IsLocalHost ? HttpAuthority : HttpHost;
