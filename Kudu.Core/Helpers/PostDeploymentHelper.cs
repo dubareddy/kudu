@@ -175,6 +175,7 @@ namespace Kudu.Core.Helpers
 
             if (syncTriggersDelaySeconds == 0)
             {
+                Trace(TraceEventType.Verbose, "Sync triggers without delay");
                 await AttemptSyncTriggerAndSetTriggers(requestId, functionsPath);
                 return;
             }
@@ -199,7 +200,7 @@ namespace Kudu.Core.Helpers
             {
                 await NotifyFrontEndOfFunctionsUpdate(requestId);
                 await WaitForFunctionsSiteRestart(syncTriggersDelaySeconds);
-
+                Trace(TraceEventType.Verbose, "Sync triggers without delay");
                 await AttemptSyncTriggerAndSetTriggers(requestId, functionsPath);
             }
         }
@@ -296,6 +297,7 @@ namespace Kudu.Core.Helpers
 
         private static async Task PerformSettriggers(string requestId, string functionsPath = null)
         {
+            Trace(TraceEventType.Information, nameof(PerformSettriggers));
             functionsPath = !string.IsNullOrEmpty(functionsPath)
                 ? functionsPath
                 : System.Environment.ExpandEnvironmentVariables(@"%HOME%\site\wwwroot");

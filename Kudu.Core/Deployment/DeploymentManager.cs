@@ -196,7 +196,7 @@ namespace Kudu.Core.Deployment
                     statusFile = GetOrCreateStatusFile(changeSet, tracer, deployer);
                     statusFile.MarkPending();
 
-                    ILogger logger = GetLogger(changeSet.Id);
+                    ILogger logger = GetLogger(changeSet.Id, tracer, deploymentInfo);
 
                     if (needFileUpdate)
                     {
@@ -663,7 +663,7 @@ namespace Kudu.Core.Deployment
 
             try
             {
-                logger = GetLogger(id);
+                logger = GetLogger(id, tracer, deploymentInfo);
                 ILogger innerLogger = logger.Log(Resources.Log_PreparingDeployment, TrimId(id));
 
                 currentStatus = _status.Open(id);
@@ -727,7 +727,7 @@ namespace Kudu.Core.Deployment
 
                     MarkStatusComplete(currentStatus, success: false, deploymentAnalytics: deploymentAnalytics);
 
-                    FailDeployment(tracer, deployStep, deploymentAnalytics, ex);
+                    FailDeployment(tracer, deployStep, deploymentAnalytics, ex, GetLogger(id, tracer, deploymentInfo));
 
                     return;
                 }
@@ -788,7 +788,7 @@ namespace Kudu.Core.Deployment
 
                         TouchWatchedFileIfNeeded(_settings, deploymentInfo, context);
 
-                        FinishDeployment(id, deployStep, deploymentAnalytics);
+                        FinishDeployment(id, deployStep, deploymentAnalytics, GetLogger(id, tracer, deploymentInfo));
 
                         deploymentAnalytics.VsProjectId = TryGetVsProjectId(context);
                         deploymentAnalytics.Result = DeployStatus.Success.ToString();
@@ -797,7 +797,7 @@ namespace Kudu.Core.Deployment
                     {
                         MarkStatusComplete(currentStatus, success: false, deploymentAnalytics: deploymentAnalytics);
 
-                        FailDeployment(tracer, deployStep, deploymentAnalytics, ex);
+                        FailDeployment(tracer, deployStep, deploymentAnalytics, ex, GetLogger(id, tracer, deploymentInfo));
 
                         return;
                     }
@@ -805,7 +805,7 @@ namespace Kudu.Core.Deployment
             }
             catch (Exception ex)
             {
-                FailDeployment(tracer, deployStep, deploymentAnalytics, ex);
+                FailDeployment(tracer, deployStep, deploymentAnalytics, ex, GetLogger(id, tracer, deploymentInfo));
             }
             finally
             {
@@ -866,7 +866,7 @@ namespace Kudu.Core.Deployment
             }
         }
 
-        private static void FailDeployment(ITracer tracer, IDisposable deployStep, DeploymentAnalytics deploymentAnalytics, Exception ex)
+        private static void FailDeployment(ITracer tracer, IDisposable deployStep, DeploymentAnalytics deploymentAnalytics, Exception ex, ILogger logger)
         {
             // End the deploy step
             deployStep.Dispose();
@@ -875,6 +875,8 @@ namespace Kudu.Core.Deployment
 
             deploymentAnalytics.Result = "Failed";
             deploymentAnalytics.Error = ex.ToString();
+
+            logger.Log(Resources.Log_DeploymentFailed);
         }
 
         private static string GetOutputPath(DeploymentInfoBase deploymentInfo, IEnvironment environment, IDeploymentSettingsManager perDeploymentSettings)
@@ -959,11 +961,10 @@ namespace Kudu.Core.Deployment
         /// - Marks the active deployment
         /// - Sets the complete flag
         /// </summary>
-        private void FinishDeployment(string id, IDisposable deployStep, DeploymentAnalytics deploymentAnalytics)
+        private void FinishDeployment(string id, IDisposable deployStep, DeploymentAnalytics deploymentAnalytics, ILogger logger)
         {
             using (deployStep)
             {
-                ILogger logger = GetLogger(id);
                 logger.Log(Resources.Log_DeploymentSuccessful);
 
                 IDeploymentStatusFile currentStatus = _status.Open(id);
@@ -1034,6 +1035,14 @@ namespace Kudu.Core.Deployment
             var logger = GetLoggerForFile(path);
             return new ProgressLogger(id, _status, new CascadeLogger(logger, _globalLogger));
         }
+
+        public ILogger GetLogger(string id, ITracer tracer, DeploymentInfoBase deploymentInfo)
+        {
+            var path = GetLogPath(id);
+            var logger = GetLoggerForFile(path); 
+            ProgressLogger progressLogger = new ProgressLogger(id, _status, new CascadeLogger(logger, new DeploymentLogger(_globalLogger, tracer, deploymentInfo)));
+            return progressLogger;
+        }                
 
         /// <summary>
         /// Prepare a directory with the deployment script and .deployment file.
