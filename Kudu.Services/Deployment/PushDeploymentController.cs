@@ -143,7 +143,8 @@ namespace Kudu.Services.Deployment
                     DoFullBuildByDefault = false,
                     Author = author,
                     AuthorEmail = authorEmail,
-                    Message = message
+                    Message = message,
+                    DeploymentPath = "WarDeploy"
                 };
 
                 return await PushDeployAsync(deploymentInfo, isAsync);
@@ -240,6 +241,7 @@ namespace Kudu.Services.Deployment
                     WatchedFileEnabled = false,
                     CleanupTargetDirectory = clean.GetValueOrDefault(false),
                     RestartAllowed = restart.GetValueOrDefault(true),
+                    DeploymentPath = "OneDeploy"
                 };
 
                 string error;
