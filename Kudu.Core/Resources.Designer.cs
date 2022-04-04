@@ -338,9 +338,9 @@ namespace Kudu.Core {
                 return ResourceManager.GetString("Log_GeneratingDeploymentScript", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to Reached maximum allowed output lines for this run, to see all of the job&apos;s logs you can enable website application diagnostics.
+        ///   Looks up a localized string similar to Reached maximum allowed output lines for this run, to see all of the job&apos;s logs you can enable App Service Logs option in the Portal..
         /// </summary>
         internal static string Log_MaxJobLogLinesReached {
             get {

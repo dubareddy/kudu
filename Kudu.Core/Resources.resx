@@ -180,8 +180,8 @@
   <data name="Log_DeploymentFailed" xml:space="preserve">
     <value>Deployment Failed.</value>
   </data>
-	<data name="Log_GeneratingDeploymentScript" xml:space="preserve">
-  <value>Generating deployment script.</value>
+  <data name="Log_GeneratingDeploymentScript" xml:space="preserve">
+    <value>Generating deployment script.</value>
   </data>
   <data name="Log_NoDeployableProjects" xml:space="preserve">
     <value>Found solution '{0}' with no deployable projects. Deploying files instead.</value>
