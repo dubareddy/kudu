@@ -106,55 +106,6 @@ namespace Kudu.Services.Deployment
             }
         }
 
-        [HttpGet]
-        public async Task<HttpResponseMessage> ValidateZipDeploy(
-            [FromUri] bool isAsync = false,
-            [FromUri] string author = null,
-            [FromUri] string authorEmail = null,
-            [FromUri] string deployer = Constants.ZipDeploy,
-            [FromUri] string message = DefaultMessage,
-            [FromUri] bool trackDeploymentProgress = false)
-        {
-            using (_tracer.Step("ZipPushDeploy"))
-            {
-                var deploymentInfo = new ArtifactDeploymentInfo(_environment, _traceFactory)
-                {
-                    AllowDeploymentWhileScmDisabled = true,
-                    Deployer = deployer,
-                    IsContinuous = false,
-                    AllowDeferredDeployment = false,
-                    IsReusable = false,
-                    TargetChangeset = DeploymentManager.CreateTemporaryChangeSet(message: "Deploying from pushed zip file"),
-                    CommitId = null,
-                    DeploymentTrackingId = Guid.NewGuid().ToString(),
-                    CorrelationId = GetCorrelationId(Request),
-                    RepositoryType = RepositoryType.None,
-                    Fetch = LocalZipHandler,
-                    DoFullBuildByDefault = false,
-                    Author = author,
-                    AuthorEmail = authorEmail,
-                    Message = message
-                };
-
-                string remotebuild = _settings.GetValue(SettingsKeys.DoBuildDuringDeployment);
-                if (_settings.RunFromLocalZip())
-                {
-                    SetRunFromZipDeploymentInfo(deploymentInfo);
-
-                    if (StringUtils.IsTrueLike(remotebuild)) deploymentInfo.DeploymentPath = "ZipDeploy. Run from package. Ignore remote build.";
-                    else deploymentInfo.DeploymentPath = "ZipDeploy. Run from package.";
-                }
-                else
-                {
-                    if (StringUtils.IsTrueLike(remotebuild)) deploymentInfo.DeploymentPath = "ZipDeploy. Extract zip. Remote build.";
-                    else deploymentInfo.DeploymentPath = "ZipDeploy. Extract zip.";
-                }
-                _tracer.Trace(deploymentInfo.DeploymentPath);
-
-                return await PushDeployAsync(deploymentInfo, isAsync);
-            }
-        }
-
         [HttpPost]
         public async Task<HttpResponseMessage> WarPushDeploy(
             [FromUri] bool isAsync = false,
