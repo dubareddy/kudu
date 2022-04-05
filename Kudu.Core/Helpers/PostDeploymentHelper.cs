@@ -270,7 +270,6 @@ namespace Kudu.Core.Helpers
 
         private static async Task<bool> TryFunctionsRuntimeSyncTriggers(string requestId)
         {
-            Trace(TraceEventType.Information, nameof(TryFunctionsRuntimeSyncTriggers));
             Exception exception = null;
 
             try
@@ -306,7 +305,6 @@ namespace Kudu.Core.Helpers
 
         private static async Task PerformSettriggers(string requestId, string functionsPath = null)
         {
-            Trace(TraceEventType.Information, nameof(PerformSettriggers));
             functionsPath = !string.IsNullOrEmpty(functionsPath)
                 ? functionsPath
                 : System.Environment.ExpandEnvironmentVariables(@"%HOME%\site\wwwroot");
