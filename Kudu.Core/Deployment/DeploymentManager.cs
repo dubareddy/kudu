@@ -362,15 +362,11 @@ namespace Kudu.Core.Deployment
             if (_settings.RecylePreviewEnabled())
             {
                 logger.Log("Triggering recycle (preview mode enabled).");
-                tracer.Trace("Triggering recycle (preview mode enabled).");
-
                 await PostDeploymentHelper.RestartMainSiteAsync(_environment.RequestId, new PostDeploymentTraceListener(tracer, logger));
             }
             else
             {
                 logger.Log("Triggering recycle (preview mode disabled).");
-                tracer.Trace("Triggering recycle (preview mode disabled).");
-
                 DockerContainerRestartTrigger.RequestContainerRestart(_environment, RestartTriggerReason, tracer);
             }
         }

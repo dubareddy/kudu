@@ -271,6 +271,8 @@ namespace Kudu.Core.Helpers
         private static async Task<bool> TryFunctionsRuntimeSyncTriggers(string requestId)
         {
             Trace(TraceEventType.Information, nameof(TryFunctionsRuntimeSyncTriggers));
+            Exception exception = null;
+
             try
             {
                 var scmHostName = IsLocalHost ? HttpAuthority : HttpHost;
@@ -289,10 +291,16 @@ namespace Kudu.Core.Helpers
 
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Trace(TraceEventType.Information, "Syncing function triggers by calling the functions runtime site failed.");
+                exception = ex;
                 return false;
+            }
+            finally
+            {
+                Trace(TraceEventType.Information,
+                      "Syncing function triggers by calling the functions runtime site failed.",
+                      exception == null ? "successful." : ("failed. " + exception));
             }
         }
 
